@@ -3,7 +3,9 @@ project(coral_pose_detection_cpp)
 
 set(CMAKE_CXX_STANDARD 20)
 
-add_executable(edgetpu_test edgetpu_pose_detection_test.cpp)
+add_executable(edgetpu_test
+#        edgetpu_pose_detection_test.cpp
+        edgetpu_working_test.cpp)
 
 include_directories(~/pose_detection/tensorflow/tensorflow/lite/tools/make/downloads/flatbuffers/include)
 include_directories(~/pose_detection/tensorflow/tensorflow/lite/)

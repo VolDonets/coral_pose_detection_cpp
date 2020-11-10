@@ -9,8 +9,6 @@
 #include <tensorflow/lite/stderr_reporter.h>
 #include <kernels/register.h>
 
-std::unique_ptr<tflite::Interpreter> BuildEdgeTpuInterpreter(const tflite::FlatBufferModel &model,
-                                        edgetpu::EdgeTpuContext *edgetpu_context);
 
 std::unique_ptr<tflite::Interpreter> BuildEdgeTpuInterpreter(const tflite::FlatBufferModel &model, edgetpu::EdgeTpuContext *edgetpu_context) {
     tflite::ops::builtin::BuiltinOpResolver resolver;
@@ -35,8 +33,20 @@ int main() {
 //            "src/models/mobilenet/posenet_mobilenet_v1_075_481_641_quant_decoder_edgetpu.tflite";
     std::unique_ptr<tflite::FlatBufferModel> model =
             tflite::FlatBufferModel::BuildFromFile(model_path.c_str());
+    if (model == nullptr) {
+        std::cerr << "Fail to build FlatBufferModel from wile: " << model_path << "\n";
+        std::abort();
+    } else {
+        std::cout << "Model from " << model_path << " file successfully built\n";
+    }
+
     std::shared_ptr<edgetpu::EdgeTpuContext> edgetpu_context =
-            edgetpu::EdgeTpuManager::GetSingleton()->OpenDevice();
+            edgetpu::EdgeTpuManager::GetSingleton()->OpenDevice(); //????
+    std::cout << "OK1\n";
+    if (edgetpu_context)
+        std::cout << "EdgeTPU device are ready!\n";
+    else
+        std::cout << "EdgeTPU device are NOT ready!!!\n";
     std::unique_ptr<tflite::Interpreter> model_interpreter =
             BuildEdgeTpuInterpreter(*model, edgetpu_context.get());
     return 0;
