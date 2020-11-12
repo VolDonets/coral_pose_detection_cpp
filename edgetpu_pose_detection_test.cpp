@@ -10,7 +10,8 @@
 #include <kernels/register.h>
 
 
-std::unique_ptr<tflite::Interpreter> BuildEdgeTpuInterpreter(const tflite::FlatBufferModel &model, edgetpu::EdgeTpuContext *edgetpu_context) {
+std::unique_ptr<tflite::Interpreter>
+BuildEdgeTpuInterpreter(const tflite::FlatBufferModel &model, edgetpu::EdgeTpuContext *edgetpu_context) {
     tflite::ops::builtin::BuiltinOpResolver resolver;
     resolver.AddCustom(edgetpu::kCustomOp, edgetpu::RegisterCustomOp());
     std::unique_ptr<tflite::Interpreter> interpreter;
@@ -27,12 +28,13 @@ std::unique_ptr<tflite::Interpreter> BuildEdgeTpuInterpreter(const tflite::FlatB
 }
 
 int main() {
-    std::cout << "Hello World :D" << "\n";
     const std::string model_path =
             "src/models/resnet/posenet_resnet_50_640_480_16_quant_edgetpu_decoder.tflite";
-//            "src/models/mobilenet/posenet_mobilenet_v1_075_481_641_quant_decoder_edgetpu.tflite";
+    //        "src/models/mobilenet/posenet_mobilenet_v1_075_481_641_quant_decoder_edgetpu.tflite";
+
     std::unique_ptr<tflite::FlatBufferModel> model =
             tflite::FlatBufferModel::BuildFromFile(model_path.c_str());
+
     if (model == nullptr) {
         std::cerr << "Fail to build FlatBufferModel from wile: " << model_path << "\n";
         std::abort();
@@ -40,13 +42,15 @@ int main() {
         std::cout << "Model from " << model_path << " file successfully built\n";
     }
 
+    const auto &available_tpus = edgetpu::EdgeTpuManager::GetSingleton()->EnumerateEdgeTpu();
+    std::cout << "Available tpus here is " << available_tpus.size() << "\n"; // hopefully we'll see 1 here
+    std::cout << "Tpu type: " << available_tpus[0].type << "\n";
+    std::cout << "Tpu path: " << available_tpus[0].path << "\n";
+
     std::shared_ptr<edgetpu::EdgeTpuContext> edgetpu_context =
-            edgetpu::EdgeTpuManager::GetSingleton()->OpenDevice(); //????
-    std::cout << "OK1\n";
-    if (edgetpu_context)
-        std::cout << "EdgeTPU device are ready!\n";
-    else
-        std::cout << "EdgeTPU device are NOT ready!!!\n";
+            edgetpu::EdgeTpuManager::GetSingleton()->OpenDevice(
+                    available_tpus[0].type, available_tpus[0].path);;
+
     std::unique_ptr<tflite::Interpreter> model_interpreter =
             BuildEdgeTpuInterpreter(*model, edgetpu_context.get());
     return 0;

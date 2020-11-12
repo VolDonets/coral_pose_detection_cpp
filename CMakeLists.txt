@@ -4,18 +4,22 @@ project(coral_pose_detection_cpp)
 set(CMAKE_CXX_STANDARD 20)
 
 add_executable(edgetpu_test
-#        edgetpu_pose_detection_test.cpp
-        edgetpu_working_test.cpp)
+        edgetpu_pose_detection_test.cpp
+#        edgetpu_working_test.cpp
+        )
 
-include_directories(~/pose_detection/tensorflow/tensorflow/lite/tools/make/downloads/flatbuffers/include)
-include_directories(~/pose_detection/tensorflow/tensorflow/lite/)
-include_directories(~/pose_detection/tensorflow)
+include_directories(/home/mendel/pose_detection/tensorflow_special_commit/tensorflow/tensorflow/lite/tools/make/downloads/flatbuffers/include)
+include_directories(/home/mendel/pose_detection/tensorflow_special_commit/tensorflow/tensorflow/lite/)
+include_directories(/home/mendel/pose_detection/tensorflow_special_commit/tensorflow)
 
-target_link_libraries(edgetpu_test /home/mendel/pose_detection/tensorflow/tensorflow/lite/tools/make/gen/linux_aarch64/lib/libtensorflow-lite.a)
-target_link_libraries(edgetpu_test edgetpu)
+
+target_link_libraries(edgetpu_test /home/mendel/pose_detection/libedgetpu-local/libedgetpu/direct/aarch64/libedgetpu.so.1.0)
+target_link_libraries(edgetpu_test /home/mendel/pose_detection/tensorflow_special_commit/tensorflow/tensorflow/lite/tools/make/gen/aarch64_armv8-a/lib/libtensorflow-lite.a)
+
 target_link_libraries(edgetpu_test pthread)
 target_link_libraries(edgetpu_test m)
 target_link_libraries(edgetpu_test dl)
+target_link_libraries(edgetpu_test rt)
 
 ###       Copying the source files for the runnable file
 add_custom_command(TARGET edgetpu_test POST_BUILD

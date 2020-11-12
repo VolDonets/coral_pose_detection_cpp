@@ -3,19 +3,13 @@
 //
 
 #include <iostream>
-#include "tensorflow/lite/interpreter.h"
-#include "tensorflow/lite/kernels/register.h"
-#include "tensorflow/lite/model.h"
-#include "tensorflow/lite/tools/gen_op_registration.h"
-#include "edgetpu.h"
+#include <tensorflow/lite/interpreter.h>
+#include <tensorflow/lite/model.h>
+#include <tensorflow/lite/kernels/register.h>
+#include <tensorflow/lite/tools/gen_op_registration.h>
+#include <edgetpu.h>
 
 int main(int argc, char** argv){
-
-    // check for correct CLI input
-//    if (argc != 3) {
-//        std::cout << "Invalid number of arguments.\nUsage: " << argv[0] << " <tflite model> <input value>\n";
-//        exit(0);
-//    }
     const std::string model_path =
             "src/models/resnet/posenet_resnet_50_640_480_16_quant_edgetpu_decoder.tflite";
 
@@ -47,7 +41,7 @@ int main(int argc, char** argv){
     }
 
     // Get the input from the CL
-    float real_input = strtof(argv[2], NULL);
+   float real_input = 0.2;
 
     // Quantize the inputs
     const std::vector<int>& inputs = interpreter->inputs();
@@ -62,7 +56,7 @@ int main(int argc, char** argv){
     // Get the output from the model
     uint8_t quant_output = interpreter->typed_tensor<uint8_t>(5)[0];
 
-    // Dequantize the outputs
+ /*    // Dequantize the outputs
     const std::vector<int>& outputs = interpreter->outputs();
     TfLiteTensor* output_tensor = interpreter->tensor(outputs[0]);
     const TfLiteQuantizationParams& output_params = output_tensor->params;
@@ -74,6 +68,6 @@ int main(int argc, char** argv){
 
     // Do something with the output
     std::cout << "Result: " << real_output << "\n";
-
+*/
     return 0;
 }
