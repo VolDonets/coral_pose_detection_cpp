@@ -4,6 +4,12 @@ project(coral_pose_detection_cpp)
 set(CMAKE_CXX_STANDARD 20)
 
 add_executable(edgetpu_test
+        posenet/posenet_decoder.h
+        posenet/posenet_decoder.cc
+        posenet/posenet_decoder_op.h
+        posenet/posenet_decoder_op.cc
+
+
         edgetpu_pose_detection_test.cpp
 #        edgetpu_working_test.cpp
         )
@@ -14,12 +20,18 @@ include_directories(/home/mendel/pose_detection/tensorflow_special_commit/tensor
 
 
 target_link_libraries(edgetpu_test /home/mendel/pose_detection/libedgetpu-local/libedgetpu/direct/aarch64/libedgetpu.so.1.0)
+#target_link_libraries(edgetpu_test edgetpu)
 target_link_libraries(edgetpu_test /home/mendel/pose_detection/tensorflow_special_commit/tensorflow/tensorflow/lite/tools/make/gen/aarch64_armv8-a/lib/libtensorflow-lite.a)
 
 target_link_libraries(edgetpu_test pthread)
 target_link_libraries(edgetpu_test m)
 target_link_libraries(edgetpu_test dl)
 target_link_libraries(edgetpu_test rt)
+
+###  Adding to the project the 'opencv' library it used for the frame processing (and, +- as an object detector) and as an object tracker
+find_package(OpenCV REQUIRED)
+include_directories(${OpenCV_INCLUDE_DIRS})
+target_link_libraries(edgetpu_test ${OpenCV_LIBS})
 
 ###       Copying the source files for the runnable file
 add_custom_command(TARGET edgetpu_test POST_BUILD
