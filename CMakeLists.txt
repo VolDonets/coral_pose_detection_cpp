@@ -3,6 +3,10 @@ project(coral_pose_detection_cpp)
 
 set(CMAKE_CXX_STANDARD 20)
 
+add_executable(gst_pipeline_test
+        process_camera_stream/gst_pipeline_processor.h
+        process_camera_stream/gst_pipeline_processor.cpp)
+
 add_executable(edgetpu_test
         posenet/posenet_decoder.h
         posenet/posenet_decoder.cc
