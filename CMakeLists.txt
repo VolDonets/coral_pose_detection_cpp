@@ -9,10 +9,13 @@ add_executable(edgetpu_test
         posenet/posenet_decoder_op.h
         posenet/posenet_decoder_op.cc
 
+        pose_detector_src/pose_detector_wrapper.h
+        pose_detector_src/pose_detector_wrapper.cpp
 
         edgetpu_pose_detection_test.cpp
-#        edgetpu_working_test.cpp
         )
+
+target_compile_definitions(edgetpu_test PRIVATE MY_DEBUG_DEF)
 
 include_directories(/home/mendel/pose_detection/tensorflow_special_commit/tensorflow/tensorflow/lite/tools/make/downloads/flatbuffers/include)
 include_directories(/home/mendel/pose_detection/tensorflow_special_commit/tensorflow/tensorflow/lite/)
