@@ -5,7 +5,28 @@ set(CMAKE_CXX_STANDARD 20)
 
 add_executable(gst_pipeline_test
         process_camera_stream/gst_pipeline_processor.h
-        process_camera_stream/gst_pipeline_processor.cpp)
+        process_camera_stream/gst_pipeline_processor.cpp
+
+        main.cpp)
+
+find_package(PkgConfig)
+if (PKG_CONFIG_FOUND)
+    pkg_check_modules(GST "gstreamer-1.0")
+    if (GST_FOUND)
+        target_link_libraries(gst_pipeline_test ${GST_LIBRARIES})
+        add_definitions(${GST_CFLAGS} ${GST_CFLAGS_OTHER})
+    endif()
+endif()
+
+find_package(PkgConfig)
+if (PKG_CONFIG_FOUND)
+    pkg_check_modules(SPD "gstreamer-sdp-1.0")
+    if (SPD_FOUND)
+        target_link_libraries(gst_pipeline_test ${SPD_LIBRARIES})
+        add_definitions(${SPD_CFLAGS} ${SPD_CFLAGS_OTHER})
+    endif()
+endif()
+
 
 add_executable(edgetpu_test
         posenet/posenet_decoder.h

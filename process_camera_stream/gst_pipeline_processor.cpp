@@ -2,6 +2,7 @@
 // Created by biba_bo on 2020-08-21.
 //
 
+
 #include "gst_pipeline_processor.h"
 
 
@@ -20,7 +21,7 @@ static GstPadProbeReturn cb_have_data(GstPad *pad, GstPadProbeInfo *info, gpoint
     if (buffer == NULL)
         return GST_PAD_PROBE_OK;
 
-    if (gst_buffer_map(buffer, &map, GST_MAP_WRITE)) {
+    /*if (gst_buffer_map(buffer, &map, GST_MAP_WRITE)) {
         cv::Mat done_main_image, done_mini_image;
         cv::Size frame_size(WIDTH, HEIGHT);
 
@@ -73,8 +74,9 @@ static GstPadProbeReturn cb_have_data(GstPad *pad, GstPadProbeInfo *info, gpoint
                     cv::Scalar(0, 255, 0), 1, cv::LINE_AA);
 
 
+        std::cout << "Hey, bro!\n";
         gst_buffer_unmap(buffer, &map);
-    }
+    }*/
 
     GST_PAD_PROBE_INFO_DATA (info) = buffer;
 
@@ -83,137 +85,70 @@ static GstPadProbeReturn cb_have_data(GstPad *pad, GstPadProbeInfo *info, gpoint
 
 //a function fro filling a ReceiverEntry structure
 //Here creates a pipeline, and adds a callback function for stream modifications
-ReceiverEntry *create_receiver_entry(seasocks::WebSocket *connection) {
-    std::cout << "receiver entry created" << "\n";
+void create_and_run_pipeline() {
+    std::cout << "Starting a pipeline!" << "\n";
     GError *error;
-    ReceiverEntry *receiver_entry;
-    GstWebRTCRTPTransceiver *trans;
-    GArray *transceivers;
-
-    receiver_entry = static_cast<ReceiverEntry *>(g_slice_alloc0(sizeof(ReceiverEntry)));
-    receiver_entry->connection = connection;
-
-    //g_object_ref (G_OBJECT (connection));
 
     error = NULL;
-#ifdef RASPBERRY_PI
-#ifdef INTEL_REALSENSE
-    receiver_entry->pipeline =
-                gst_parse_launch ("webrtcbin name=webrtcbin  stun-server=stun://" STUN_SERVER " "
-                                  "videotestsrc pattern=ball "
-                                  "! video/x-raw,width=" STR_WIDTH ",height=" STR_HEIGHT ",framerate=" STR_FRAMERATE " "
-                                  "! videoconvert name=ocvvideosrc "
-                                  "! video/x-raw,format=BGRA "
-                                  "! videoconvert "
-                                  "! queue max-size-buffers=1 "
-                                  "! omxh264enc "
-                                  "! queue max-size-time=100000000 "
-                                  "! rtph264pay config-interval=10 name=payloader pt=96 "
-                                  "! capssetter caps=\"application/x-rtp,profile-level-id=(string)42c01f,media=(string)video,encoding-name=(string)H264,payload=(int)96\" "
-                                  "! webrtcbin. ", &error);
-#else
-    receiver_entry->pipeline =
-                gst_parse_launch ("webrtcbin name=webrtcbin  stun-server=stun://" STUN_SERVER " "
-                                  "v4l2src device=/dev/video0 "
-                                  "! video/x-raw,width=" STR_WIDTH ",height=" STR_HEIGHT ",framerate=" STR_FRAMERATE " "
-                                  "! videoconvert name=ocvvideosrc "
-                                  "! video/x-raw,format=BGRA "
-                                  "! videoconvert "
-                                  "! queue max-size-buffers=1 "
-                                  "! omxh264enc "
-                                  "! queue max-size-time=100000000 "
-                                  "! rtph264pay config-interval=10 name=payloader pt=96 "
-                                  "! capssetter caps=\"application/x-rtp,profile-level-id=(string)42c01f,media=(string)video,encoding-name=(string)H264,payload=(int)96\" "
-                                  "! webrtcbin. ", &error);
-#endif //INTEL_REALSENSE
-#endif //RASPBERRY_PI
 
-#ifdef UBUNTU_PC
-#ifdef INTEL_REALSENSE
-    receiver_entry->pipeline =
-            gst_parse_launch("webrtcbin name=webrtcbin  stun-server=stun://" STUN_SERVER " "
-                             "videotestsrc pattern=ball "
-                             "! video/x-raw,width=" STR_WIDTH ",height=" STR_HEIGHT ",framerate=" STR_FRAMERATE " "
+    GstElement *pipeline =
+            gst_parse_launch(""
+                             "v4l2src device=/dev/video1 "
+                             "! video/x-raw,width=" STR_WIDTH ",height=" STR_HEIGHT ",framerate= " STR_FRAMERATE " "
                              "! videoconvert name=ocvvideosrc "
                              "! video/x-raw,format=BGRA "
                              "! videoconvert "
                              "! queue max-size-buffers=1 "
                              "! x264enc speed-preset=ultrafast tune=zerolatency key-int-max=15 "
-                             "! video/x-h264,profile=constrained-baseline "
-                             "! queue max-size-time=0 "
+                             "! video/x-h264,profile=constrained-baseline ! queue max-size-time=0 "
                              "! h264parse "
-                             "! rtph264pay config-interval=-1 name=payloader "
-                             "! application/x-rtp,media=video,encoding-name=H264,payload=" RTP_PAYLOAD_TYPE " "
-                             "! webrtcbin. ", &error);
-#else
-    receiver_entry->pipeline =
-            gst_parse_launch("webrtcbin name=webrtcbin  stun-server=stun://" STUN_SERVER " "
-                             "v4l2src device=/dev/video0 "
-                             "! video/x-raw,width=" STR_WIDTH ",height=" STR_HEIGHT ",framerate=" STR_FRAMERATE " "
-                             "! videoconvert name=ocvvideosrc "
-                             "! video/x-raw,format=BGRA "
-                             "! videoconvert "
-                             "! queue max-size-buffers=1 "
-                             "! x264enc speed-preset=ultrafast tune=zerolatency key-int-max=15 "
-                             "! video/x-h264,profile=constrained-baseline "
-                             "! queue max-size-time=0 "
-                             "! h264parse "
-                             "! rtph264pay config-interval=-1 name=payloader "
-                             "! application/x-rtp,media=video,encoding-name=H264,payload=" RTP_PAYLOAD_TYPE " "
-                             "! webrtcbin. ", &error);
-#endif //INTEL_REALSENSE
-#endif //UBUNTU_PC
+                             "! rtph264pay config-interval=10 pt=96 "
+                             "! udpsink host=" STR_IP " auto-multicast=true port=" STR_PORT "", &error);
 
-#ifdef INTEL_REALSENSE
-    realsenseCameraProcessor->start_processing();
-#endif //INTEL_REALSENSE
 
     if (error != NULL) {
-        g_error ("Could not create WebRTC pipeline: %s\n", error->message);
+        g_error("Could not create UDP pipeline: %s\n", error->message);
         g_error_free(error);
         goto cleanup;
     }
 
-    receiver_entry->ocvvideosrc = gst_bin_get_by_name(GST_BIN(receiver_entry->pipeline), "ocvvideosrc");
+    GstElement *ocvvideosrc;
+    ocvvideosrc = gst_bin_get_by_name(GST_BIN(pipeline), "ocvvideosrc");
+
     GstPad *pad;
-    pad = gst_element_get_static_pad(receiver_entry->ocvvideosrc, "src");
+    pad = gst_element_get_static_pad(ocvvideosrc, "src");
     gst_pad_add_probe(pad, GST_PAD_PROBE_TYPE_BUFFER, (GstPadProbeCallback) cb_have_data, NULL, NULL);
     gst_object_unref(pad);
 
-    receiver_entry->webrtcbin =
-            gst_bin_get_by_name(GST_BIN (receiver_entry->pipeline), "webrtcbin");
-    g_assert (receiver_entry->webrtcbin != NULL);
-
-    g_signal_emit_by_name(receiver_entry->webrtcbin, "get-transceivers",
-                          &transceivers);
-    g_assert (transceivers != NULL && transceivers->len > 0);
-    trans = g_array_index (transceivers, GstWebRTCRTPTransceiver *, 0);
-    trans->direction = GST_WEBRTC_RTP_TRANSCEIVER_DIRECTION_SENDONLY;
-    g_array_unref(transceivers);
-
-    g_signal_connect (receiver_entry->webrtcbin, "on-negotiation-needed",
-                      G_CALLBACK(on_negotiation_needed_cb), (gpointer) receiver_entry);
-
-    g_signal_connect (receiver_entry->webrtcbin, "on-ice-candidate",
-                      G_CALLBACK(on_ice_candidate_cb), (gpointer) receiver_entry);
-
-    gst_element_set_state(receiver_entry->pipeline, GST_STATE_PLAYING);
-
-    return receiver_entry;
+    gst_element_set_state(pipeline, GST_STATE_PLAYING);
 
     cleanup:
-    destroy_receiver_entry((gpointer) receiver_entry);
-    return NULL;
+    gst_object_unref(GST_OBJECT (pipeline));
 }
 
-int webrtc_gst_loop(seasocks::WebSocket *connection) {
+#ifdef G_OS_UNIX
+gboolean exit_sighandler (gpointer user_data) {
+    g_print ("Caught signal, stopping mainloop\n");
+    GMainLoop *mainloop = (GMainLoop *) user_data;
+    g_main_loop_quit (mainloop);
+    return TRUE;
+}
+#endif
+
+int start_gst_loop() {
     setlocale(LC_ALL, "");
     gst_init(nullptr, nullptr);
 
+    GMainLoop *mainloop;
     mainloop = g_main_loop_new(NULL, FALSE);
     g_assert (mainloop != NULL);
 
-    my_receiver_entry = create_receiver_entry(connection);
+#ifdef G_OS_UNIX
+    g_unix_signal_add(SIGINT, exit_sighandler, mainloop);
+    g_unix_signal_add(SIGTERM, exit_sighandler, mainloop);
+#endif
+
+    create_and_run_pipeline();
 
     g_main_loop_run(mainloop);
 

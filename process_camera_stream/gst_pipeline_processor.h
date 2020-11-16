@@ -5,10 +5,24 @@
 #ifndef IRON_TURTLE_REAR_SIGHT_WEBRTC_MANIPULATION_H
 #define IRON_TURTLE_REAR_SIGHT_WEBRTC_MANIPULATION_H
 
-#include <locale.h>
-#include <glib.h>
+#include <iostream>
 #include <gst/gst.h>
-#include <gst/sdp/sdp.h>
 
+#ifdef G_OS_UNIX
+#include <glib-unix.h>
+#endif
+
+#define STR_WIDTH       "640"
+#define STR_HEIGHT      "480"
+#define STR_FRAMERATE   "15/1"
+#define STR_IP          "192.168.3.255"
+#define STR_PORT        "5000"
+
+static GstPadProbeReturn cb_have_data(GstPad *pad, GstPadProbeInfo *info, gpointer user_data);
+void create_and_run_pipeline();
+#ifdef G_OS_UNIX
+gboolean exit_sighandler (gpointer user_data);
+#endif //G_OS_UNIX
+int start_gst_loop();
 
 #endif //IRON_TURTLE_REAR_SIGHT_WEBRTC_MANIPULATION_H
