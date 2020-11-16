@@ -97,19 +97,19 @@ private:
 
     /** @brief This function converts a cv::Mat object into the special format for the poseNet model
      *  @return converted data from cv::Mat in the vector.*/
-    std::vector<uint8_t> getInputDataFromFrame(cv::Mat &inputFrame);
+    std::vector<uint8_t> get_input_data_from_frame(cv::Mat &inputFrame);
 
     /** @brief This function set an input data (from frame) into the input of the neural network
      *  @param inputData - a vector of the converted data from the cv::Mat
      *  @return a vector of float values (here is raw output of the neural network) */
-    std::vector<float> getRawOutputDataFromModel(const std::vector<uint8_t> &inputData);
+    std::vector<float> get_raw_output_data_from_model(const std::vector<uint8_t> &inputData);
 
     /** @brief This function converts raw data into usable format for using in image
      *  @param outputRawDataVector - this is vector<float>, which contain output neural network after work
      *  @param threshold - this is threshold value for removing wrong results
      *  @return - vector of DectedPose-s - in usable format*/
     std::vector<DetectedPose>
-    getPoseEstimateFromOutputRawData(const std::vector<float> &outputRawDataVector, const float &threshold);
+    get_pose_estimate_from_output_raw_data(const std::vector<float> &outputRawDataVector, const float &threshold);
 
     /** @brief This function is used for loading a model from file into a tensorflow and connects
      *         it with an edgetpu context for processing an calculations.
@@ -135,7 +135,7 @@ public:
 
     /** @brief this function adds a frame into frames queue, which used for detecting frames from the image
      *  @param frame - this a new frame for recognition.*/
-    void add_frame(cv::Mat &frame);
+    void add_frame(cv::Mat frame);
 
     /** @brief this function for getting last detected humans poses
      *  @return a vector with detected poses coordinates,
@@ -149,6 +149,10 @@ public:
     /** @brief This function stops a pose detection thread if it possible.
      *  @return result of operation. */
     int stop_pose_detection();
+
+    /** @brief This function draw pose on the any frame (it can draw, or no, dependently from detection status)
+     *  @param frame - this is a pointer to image, on which can be drawn pose pointers*/
+    void draw_last_pose_on_image(cv::Mat &frame);
 };
 
 

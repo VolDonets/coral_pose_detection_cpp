@@ -112,6 +112,7 @@ int main() {
     cv::resize(image_file_normal, image_file, cv::Size(dims->data[2], dims->data[1]));
     cv::Mat flat = image_file.reshape(1, image_file.total() * image_file.channels());
     std::vector<uint8_t> in_vec = image_file.isContinuous() ? flat : flat.clone();
+    std::cout << "Vector: " << in_vec.size();
 
     std::vector<float> output_data;
     auto *input = model_interpreter->typed_input_tensor<uint8_t>(0);

@@ -21,62 +21,15 @@ static GstPadProbeReturn cb_have_data(GstPad *pad, GstPadProbeInfo *info, gpoint
     if (buffer == NULL)
         return GST_PAD_PROBE_OK;
 
-    /*if (gst_buffer_map(buffer, &map, GST_MAP_WRITE)) {
-        cv::Mat done_main_image, done_mini_image;
-        cv::Size frame_size(WIDTH, HEIGHT);
+    if (gst_buffer_map(buffer, &map, GST_MAP_WRITE)) {
+        cv::Mat mainImage = cv::Mat(cv::Size(WIDTH, HEIGHT), CV_8UC4, (char *) (map.data), cv::Mat::AUTO_STEP);
+        cv::Mat mainImageClone = mainImage.clone();
 
-        cv::Mat main_image = cv::Mat(frame_size, CV_8UC4, (char *) (map.data), cv::Mat::AUTO_STEP);
+        s_poseDetectorWrapper->add_frame(mainImageClone);
+        s_poseDetectorWrapper->draw_last_pose_on_image(mainImage);
 
-
-        if (count_frames == CHECK_PER_FRAMES) {
-            cv::Mat checking_mat = main_image.clone();
-            form_detection_processor->add_frame(checking_mat);
-            count_frames = 0;
-        }
-        count_frames++;
-        std::vector<cv::Rect> *faces_coord = form_detection_processor->getLastDetectedFaces();
-        if (faces_coord != nullptr) {
-            // this line draw all detected ROIs, WITHOUT interpolation
-            for (int i = 0; i < faces_coord->size(); i++)
-                cv::rectangle(main_image, faces_coord->operator[](i), cv::Scalar(0, 255, 0), 2, 0, 0);
-        }
-
-
-        cv::Mat copy_main_image = main_image.clone();
-
-        cv::Rect my_interest_region(frame_param->CROPPED_X, frame_param->CROPPED_Y,
-                                    frame_param->CROPPED_WIDTH, frame_param->CROPPED_HEIGHT);
-        cv::rectangle(copy_main_image, my_interest_region, cv::Scalar(0, 0, 255), 2, 0, 0);
-
-        cv::Mat cropped_img = main_image(my_interest_region);
-        cv::resize(cropped_img, done_main_image, cv::Size(WIDTH, HEIGHT));
-        cv::resize(copy_main_image, done_mini_image, cv::Size(RESIZE_WIDTH, RESIZE_HEIGHT));
-
-        cv::Rect main_insertion_coord(0, 0, WIDTH, HEIGHT);
-        cv::Rect mini_insertion_coord(RESIZE_X, RESIZE_Y, RESIZE_WIDTH, RESIZE_HEIGHT);
-
-        done_main_image.copyTo(main_image(main_insertion_coord));
-        done_mini_image.copyTo(main_image(mini_insertion_coord));
-
-        cv::circle(main_image, cv::Point(DRAW_CIRCLE_X, DRAW_CIRCLE_Y), DRAW_CIRCLE_RADIUS, cv::Scalar(0, 0, 255), 2,
-                   cv::LINE_8, 0);
-        cv::line(main_image, cv::Point(DRAW_LINE_1B_X, DRAW_LINE_1B_Y), cv::Point(DRAW_LINE_1E_X, DRAW_LINE_1E_Y),
-                 cv::Scalar(0, 0, 255), 2, cv::LINE_8);
-        cv::line(main_image, cv::Point(DRAW_LINE_2B_X, DRAW_LINE_2B_Y), cv::Point(DRAW_LINE_2E_X, DRAW_LINE_2E_Y),
-                 cv::Scalar(0, 0, 255), 2, cv::LINE_8);
-        cv::line(main_image, cv::Point(DRAW_LINE_3B_X, DRAW_LINE_3B_Y), cv::Point(DRAW_LINE_3E_X, DRAW_LINE_3E_Y),
-                 cv::Scalar(0, 0, 255), 2, cv::LINE_8);
-        cv::line(main_image, cv::Point(DRAW_LINE_4B_X, DRAW_LINE_4B_Y), cv::Point(DRAW_LINE_4E_X, DRAW_LINE_4E_Y),
-                 cv::Scalar(0, 0, 255), 2, cv::LINE_8);
-
-        // printing a speed value (here is a commands for the left and the right wheels)
-        cv::putText(main_image, current_speed, cv::Point(5, 15), cv::FONT_HERSHEY_COMPLEX_SMALL, 1.0,
-                    cv::Scalar(0, 255, 0), 1, cv::LINE_AA);
-
-
-        std::cout << "Hey, bro!\n";
         gst_buffer_unmap(buffer, &map);
-    }*/
+    }
 
     GST_PAD_PROBE_INFO_DATA (info) = buffer;
 
@@ -136,6 +89,9 @@ gboolean exit_sighandler (gpointer user_data) {
 #endif
 
 int start_gst_loop() {
+    s_poseDetectorWrapper = std::make_unique<PoseDetectorWrapper>();
+    s_poseDetectorWrapper->start_pose_detection();
+
     setlocale(LC_ALL, "");
     gst_init(nullptr, nullptr);
 
