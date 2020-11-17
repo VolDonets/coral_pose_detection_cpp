@@ -27,67 +27,47 @@ PoseDetectorWrapper::~PoseDetectorWrapper() {
 }
 
 void PoseDetectorWrapper::init_pose_detector(const std::string &pathToModelFile) {
+    std::cout << "Initialization!\n";
     _statusModelInterpreterActivation = CODE_STATUS_OK;
-    std::unique_ptr<tflite::FlatBufferModel> model =
-            tflite::FlatBufferModel::BuildFromFile(pathToModelFile.c_str());
+    _model = tflite::FlatBufferModel::BuildFromFile(pathToModelFile.c_str());
 
-    if (model == nullptr) {
-#ifdef MY_DEBUG_DEF
+    if (_model == nullptr) {
         std::cerr << "FAIL to build FlatBufferModel from file!\n";
-#endif //MY_DEBUG_DEF
         _statusModelInterpreterActivation = CODE_FAILED_BUILD_MODEL_FROM_FILE;
         return;
-    }
-#ifdef MY_DEBUG_DEF
-    else {
+    } else {
         std::cout << "Model from file SUCCESSFULLY built\n";
     }
-#endif //MY_DEBUG_DEF
 
     const auto &available_tpus = edgetpu::EdgeTpuManager::GetSingleton()->EnumerateEdgeTpu();
-    std::shared_ptr<edgetpu::EdgeTpuContext> edgetpuContext =
+    _edgetpuContext =
             edgetpu::EdgeTpuManager::GetSingleton()->OpenDevice(
                     available_tpus[0].type, available_tpus[0].path);
-    tflite::ops::builtin::BuiltinOpResolver resolver;
-    resolver.AddCustom(coral::kPosenetDecoderOp, coral::RegisterPosenetDecoderOp());
-    resolver.AddCustom(edgetpu::kCustomOp, edgetpu::RegisterCustomOp());
-
-    if (tflite::InterpreterBuilder(*model, resolver)(&_modelInterpreter) != kTfLiteOk) {
-#ifdef MY_DEBUG_DEF
-        std::cerr << "Failed to build interpreter." << std::endl;
-#endif //MY_DEBUG_DEFF
-        _statusModelInterpreterActivation = CODE_FAILED_BUILD_MODEL_FROM_FILE;
-        return;
-    }
-    // Bind given context with interpreter.
-    _modelInterpreter->SetExternalContext(kTfLiteEdgeTpuContext, edgetpuContext.get());
-    _modelInterpreter->SetNumThreads(1);
-    if (_modelInterpreter->AllocateTensors() != kTfLiteOk) {
-#ifdef MY_DEBUG_DEF
-        std::cerr << "Failed to allocate tensors." << std::endl;
-#endif //MY_DEBUG_DEF
-        _statusModelInterpreterActivation = CODE_FAILED_BUILD_MODEL_FROM_FILE;
+    // here can be changed a value of _statusModelInterpreterActivation
+    // so after it we should to check it
+    _modelInterpreter = build_edge_tpu_interpreter(*_model, _edgetpuContext.get());
+    if (_statusModelInterpreterActivation != CODE_STATUS_OK) {
         return;
     }
 
     const auto *dims = _modelInterpreter->tensor(_modelInterpreter->inputs()[0])->dims;
+    std::cout << "Dims info: " << dims->data[0] << " " << dims->data[1] << " " << dims->data[2] << " " << dims->data[3]
+              << "\n";
+
     _widthInputLayerPoseNetModel = dims->data[2];
     _heightInputLayerPoseNetModel = dims->data[1];
 
-    // ////// init _outputModelShape
+    // ////// init m_output_shape
     const auto &out_tensor_indices = _modelInterpreter->outputs();
     _outputModelShape.resize(out_tensor_indices.size());
-#ifdef MY_DEBUG_DEF
     //for debugging
     std::cout << "out_tensor_indices.size() : " << out_tensor_indices.size() << std::endl;
-    std::cout << "tensor_dims: " << _widthInputLayerPoseNetModel << ", " << _heightInputLayerPoseNetModel << "\n";
-#endif //MY_DEBUG_DEF
     for (size_t i = 0; i < out_tensor_indices.size(); i++) {
         const auto *tensor = _modelInterpreter->tensor(out_tensor_indices[i]);
         // We are assuming that outputs tensor are only of type float.
         _outputModelShape[i] = tensor->bytes / sizeof(float);
     }
-    // ////// END of the initing outputModelShape
+    // ////// END of the initing m_output_shape
 }
 
 void PoseDetectorWrapper::add_frame(cv::Mat frame) {
@@ -122,27 +102,17 @@ int PoseDetectorWrapper::stop_pose_detection() {
 std::vector<uint8_t> PoseDetectorWrapper::get_input_data_from_frame(cv::Mat &inputFrame) {
     cv::Mat resizedFrame;
     cv::resize(inputFrame, resizedFrame, cv::Size(_widthInputLayerPoseNetModel, _heightInputLayerPoseNetModel));
-    std::cout << "Ok1\n";
     cv::cvtColor(resizedFrame, resizedFrame, cv::COLOR_BGRA2RGB);
-    std::cout << "OK2\n";
     cv::Mat flat = resizedFrame.reshape(1, resizedFrame.total() * resizedFrame.channels());
-    std::cout << "Flat: " << flat.rows << " " << flat.cols << "\n";
     std::vector<uint8_t> inputDataVector = resizedFrame.isContinuous() ? flat : flat.clone();
-    std::cout << "Vector: " << inputDataVector.size() << "\n";
     return inputDataVector;
 }
 
 std::vector<float> PoseDetectorWrapper::get_raw_output_data_from_model(const std::vector<uint8_t> &inputData) {
     std::vector<float> outputData;
-    std::cout << "Step OK OK\n";
     auto *input = _modelInterpreter->typed_input_tensor<uint8_t>(0);
-    std::cout << "Step OK OK2\n";
     std::memcpy(input, inputData.data(), inputData.size());
-    std::cout << "Step OK OK3\n";
     _modelInterpreter->Invoke();
-    // TODO when I run program as su _modelInterpreter is stops thread and just wait,
-    // TODO when, I run without su it crash with 'Segmentation fault'
-    std::cout << "Step OK OK4\n";
 
 
     const auto &output_indices = _modelInterpreter->outputs();
@@ -214,22 +184,17 @@ void PoseDetectorWrapper::process_pose_detection() {
             currentFrame = _queueFrames.front();
             _queueFrames.pop_front();
             _mutexRes.unlock();
-            std::cout << "Thread works\n";
 
             std::vector<uint8_t> inputData = get_input_data_from_frame(currentFrame);
-            std::cout << "Step OK!\n";
             std::vector<float> rawOutputData = get_raw_output_data_from_model(inputData);
-            std::cout << "Step OK2!\n";
             std::vector<DetectedPose> detectedPoses = get_pose_estimate_from_output_raw_data(rawOutputData,
                                                                                              POSE_THRESHOLD);
-            std::cout << "Step OK3!\n";
             if (_queueDetectedPoses.size() > MAX_COUNT_POSE_VECTORS_IN_QUEUE)
                 _queueDetectedPoses.pop_front();
             _queueDetectedPoses.push_back(detectedPoses);
             if (!_queueFrames.empty()) {
                 _mutexProc.unlock();
             }
-            std::cout << "DONE THREAD LOOP \n";
         }
     });
 }
@@ -256,3 +221,24 @@ void PoseDetectorWrapper::draw_last_pose_on_image(cv::Mat &frame) {
     }
 }
 
+std::unique_ptr<tflite::Interpreter>
+PoseDetectorWrapper::build_edge_tpu_interpreter(const tflite::FlatBufferModel &model,
+                                                edgetpu::EdgeTpuContext *edgetpu_context) {
+    std::cout << "OK ****\n";
+    tflite::ops::builtin::BuiltinOpResolver resolver;
+    resolver.AddCustom(coral::kPosenetDecoderOp, coral::RegisterPosenetDecoderOp());
+    resolver.AddCustom(edgetpu::kCustomOp, edgetpu::RegisterCustomOp());
+    std::unique_ptr<tflite::Interpreter> interpreter;
+    if (tflite::InterpreterBuilder(model, resolver)(&interpreter) != kTfLiteOk) {
+        std::cerr << "Failed to build interpreter." << std::endl;
+        _statusModelInterpreterActivation = CODE_FAILED_BUILD_MODEL_FROM_FILE;
+    }
+    // Bind given context with interpreter.
+    interpreter->SetExternalContext(kTfLiteEdgeTpuContext, edgetpu_context);
+    interpreter->SetNumThreads(1);
+    if (interpreter->AllocateTensors() != kTfLiteOk) {
+        std::cerr << "Failed to allocate tensors." << std::endl;
+        _statusModelInterpreterActivation = CODE_FAILED_BUILD_MODEL_FROM_FILE;
+    }
+    return interpreter;
+}

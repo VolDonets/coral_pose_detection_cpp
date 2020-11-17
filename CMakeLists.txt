@@ -57,19 +57,31 @@ if (PKG_CONFIG_FOUND)
 endif ()
 
 
-add_executable(edgetpu_test
-        posenet/posenet_decoder.h
-        posenet/posenet_decoder.cc
-        posenet/posenet_decoder_op.h
-        posenet/posenet_decoder_op.cc
+#add_executable(edgetpu_test
+#        posenet/posenet_decoder.h
+#        posenet/posenet_decoder.cc
+#        posenet/posenet_decoder_op.h
+#        posenet/posenet_decoder_op.cc
+#
+#        edgetpu_pose_detection_test.cpp)
+#
+#target_compile_definitions(edgetpu_test PRIVATE MY_DEBUG_DEF)
+#dep_edgetpu_tsl(edgetpu_test)
 
-        edgetpu_pose_detection_test.cpp)
+####       Copying the source files for the runnable file
+#add_custom_command(TARGET edgetpu_test POST_BUILD
+#        COMMAND ${CMAKE_COMMAND} -E copy_directory
+#        ${PROJECT_SOURCE_DIR}/src $<TARGET_FILE_DIR:edgetpu_test>/src)
 
-target_compile_definitions(edgetpu_test PRIVATE MY_DEBUG_DEF)
-dep_edgetpu_tsl(edgetpu_test)
-
-###       Copying the source files for the runnable file
-add_custom_command(TARGET edgetpu_test POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${PROJECT_SOURCE_DIR}/src $<TARGET_FILE_DIR:edgetpu_test>/src)
-
+#add_executable(pose_detector_wrapper_tester
+#        posenet/posenet_decoder.h
+#        posenet/posenet_decoder.cc
+#        posenet/posenet_decoder_op.h
+#        posenet/posenet_decoder_op.cc
+#
+#        pose_detector_src/pose_detector_wrapper.h
+#        pose_detector_src/pose_detector_wrapper.cpp
+#
+#        pose_detector_wrapper_tester.cpp)
+#
+#dep_edgetpu_tsl(pose_detector_wrapper_tester)

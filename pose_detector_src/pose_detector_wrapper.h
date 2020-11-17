@@ -22,20 +22,20 @@
 #include "../posenet/posenet_decoder_op.h"
 
 /** @brief This constant contains a code of successful operation. */
-constexpr int CODE_STATUS_OK = 0;
+const int CODE_STATUS_OK = 0;
 /** @brief This code contains a code of unsuccessful operation loading a poseNet model from file
  *         Usually problems are 1st wrong path to file, 2nd wrong type of model. */
-constexpr int CODE_FAILED_BUILD_MODEL_FROM_FILE = -1;
+const int CODE_FAILED_BUILD_MODEL_FROM_FILE = -1;
 /** @brief This is a path to file with the poseNet model,
  *         which contained pretrained model and weights for detecting human poses key points. */
 const std::string PATH_TO_POSENET_MODEL = "src/models/mobilenet/posenet_mobilenet_v1_075_481_641_quant_decoder_edgetpu.tflite";
 /** @brief This constant contains a maximum count of frames in the frames queue. */
-constexpr int MAX_COUNT_FRAMES_IN_QUEUE = 2;
+const int MAX_COUNT_FRAMES_IN_QUEUE = 2;
 /** @brief This constant contains a maximum count of the vectors with poses in the
  *         queue of detected frames. */
-constexpr int MAX_COUNT_POSE_VECTORS_IN_QUEUE = 2;
+const int MAX_COUNT_POSE_VECTORS_IN_QUEUE = 2;
 /** @brief This constant contains a threshold for removing wrong detected points. */
-constexpr float POSE_THRESHOLD = 0.1;
+const float POSE_THRESHOLD = 0.1;
 
 /** This is a data structure which contains a result with the last detected poses*/
 struct DetectedPose {
@@ -80,6 +80,11 @@ private:
      *         if model are not initialized, you cannot to start a thread. */
     int _statusModelInterpreterActivation;
 
+    std::shared_ptr<edgetpu::EdgeTpuContext> _edgetpuContext;
+
+    /** @brief this is a model loaded from file */
+    std::unique_ptr<tflite::FlatBufferModel> _model;
+
     /** @brief this variable contains an initialized model with poseNet and possibility to use edgetpu*/
     std::unique_ptr<tflite::Interpreter> _modelInterpreter;
 
@@ -94,6 +99,9 @@ private:
     /** @brief this is a height of an input image in the poseNet model
      *         (also it can be a height of the input neuron network layer).*/
     int _heightInputLayerPoseNetModel;
+
+    std::unique_ptr<tflite::Interpreter>
+    build_edge_tpu_interpreter(const tflite::FlatBufferModel &model, edgetpu::EdgeTpuContext *edgetpu_context);
 
     /** @brief This function converts a cv::Mat object into the special format for the poseNet model
      *  @return converted data from cv::Mat in the vector.*/

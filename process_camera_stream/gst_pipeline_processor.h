@@ -21,8 +21,8 @@
 #define STR_IP          "192.168.3.255"
 #define STR_PORT        "5000"
 
-constexpr int WIDTH = 640;
-constexpr int HEIGHT = 480;
+const int WIDTH = 640;
+const int HEIGHT = 480;
 
 static GstPadProbeReturn cb_have_data(GstPad *pad, GstPadProbeInfo *info, gpointer user_data);
 void create_and_run_pipeline();
