@@ -28,6 +28,9 @@ add_executable(pose_stream_test
         posenet/posenet_decoder_op.h
         posenet/posenet_decoder_op.cc
 
+        pose_angle_detection_src/pose_angle_engine.cpp
+        pose_angle_detection_src/pose_angle_engine.h
+
         pose_detector_src/pose_detector_wrapper.h
         pose_detector_src/pose_detector_wrapper.cpp
 
