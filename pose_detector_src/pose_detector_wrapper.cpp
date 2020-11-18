@@ -11,6 +11,7 @@ PoseDetectorWrapper::PoseDetectorWrapper() {
     _mutexProc.lock();
     // load model from file and prepare space for pose detection processing
     init_pose_detector(PATH_TO_POSENET_MODEL);
+    _poseAngleEngine = std::make_shared<PoseAngleEngine>(true, 640, 480);
 }
 
 PoseDetectorWrapper::PoseDetectorWrapper(const std::string &pathToPoseNetModel) {
@@ -27,7 +28,6 @@ PoseDetectorWrapper::~PoseDetectorWrapper() {
 }
 
 void PoseDetectorWrapper::init_pose_detector(const std::string &pathToModelFile) {
-    std::cout << "Initialization!\n";
     _statusModelInterpreterActivation = CODE_STATUS_OK;
     _model = tflite::FlatBufferModel::BuildFromFile(pathToModelFile.c_str());
 
@@ -57,7 +57,7 @@ void PoseDetectorWrapper::init_pose_detector(const std::string &pathToModelFile)
     _widthInputLayerPoseNetModel = dims->data[2];
     _heightInputLayerPoseNetModel = dims->data[1];
 
-    // ////// init m_output_shape
+    // ////// init _outputModelShape
     const auto &out_tensor_indices = _modelInterpreter->outputs();
     _outputModelShape.resize(out_tensor_indices.size());
     //for debugging
@@ -67,7 +67,7 @@ void PoseDetectorWrapper::init_pose_detector(const std::string &pathToModelFile)
         // We are assuming that outputs tensor are only of type float.
         _outputModelShape[i] = tensor->bytes / sizeof(float);
     }
-    // ////// END of the initing m_output_shape
+    // ////// END of the initing _outputModelShape
 }
 
 void PoseDetectorWrapper::add_frame(cv::Mat frame) {
@@ -203,9 +203,9 @@ void PoseDetectorWrapper::draw_last_pose_on_image(cv::Mat &frame) {
     float camera_width = frame.cols;
     float camera_height = frame.rows;
     if (!_queueDetectedPoses.empty()) {
-        std::vector<int> k_x(17), k_y(17);
-        const auto &green = cv::Scalar(0, 255, 0);
+        const auto &green = cv::Scalar(255, 0, 0);
         for (auto &candidate : _queueDetectedPoses.front()) {
+            std::vector<int> k_x(17), k_y(17);
             for (int i = 0; i < 17; i++) {
                 if (candidate.keypointScores[i] > POSE_THRESHOLD) {
                     float x_coordinate =
@@ -215,8 +215,25 @@ void PoseDetectorWrapper::draw_last_pose_on_image(cv::Mat &frame) {
                     k_x[i] = static_cast<int>(x_coordinate);
                     k_y[i] = static_cast<int>(y_coordinate);
                     cv::circle(frame, cv::Point(k_x[i], k_y[i]), 0, green, 6, 1, 0);
+                    std::string str = "-" + std::to_string(i);
+                    cv::putText(frame, str, cv::Point(k_x[i] + 5, k_y[i] + 5), cv::FONT_HERSHEY_COMPLEX_SMALL, 1.0,
+                                cv::Scalar(0, 255, 0), 1, cv::LINE_AA);
+                } else {
+                    k_x[i] = -1;
                 }
             }
+            float angle = _poseAngleEngine->get_angle(k_x, k_y);
+            std::string strLine = "Pose angle: " + std::to_string(angle);
+            cv::putText(frame, strLine, cv::Point(10, 20), cv::FONT_HERSHEY_COMPLEX_SMALL, 1.0,
+                        cv::Scalar(46, 193, 24), 1, cv::LINE_AA);
+
+            strLine = "Eyes distance: " + std::to_string(_poseAngleEngine->get_eyes_distance());
+            cv::putText(frame, strLine, cv::Point(10, 40), cv::FONT_HERSHEY_COMPLEX_SMALL, 1.0,
+                        cv::Scalar(46, 193, 24), 1, cv::LINE_AA);
+            strLine = "Shoulder distance: " + std::to_string(_poseAngleEngine->get_shoulder_distance());
+            cv::putText(frame, strLine, cv::Point(10, 60), cv::FONT_HERSHEY_COMPLEX_SMALL, 1.0,
+                        cv::Scalar(46, 193, 24), 1, cv::LINE_AA);
+            break;
         }
     }
 }
@@ -224,7 +241,6 @@ void PoseDetectorWrapper::draw_last_pose_on_image(cv::Mat &frame) {
 std::unique_ptr<tflite::Interpreter>
 PoseDetectorWrapper::build_edge_tpu_interpreter(const tflite::FlatBufferModel &model,
                                                 edgetpu::EdgeTpuContext *edgetpu_context) {
-    std::cout << "OK ****\n";
     tflite::ops::builtin::BuiltinOpResolver resolver;
     resolver.AddCustom(coral::kPosenetDecoderOp, coral::RegisterPosenetDecoderOp());
     resolver.AddCustom(edgetpu::kCustomOp, edgetpu::RegisterCustomOp());

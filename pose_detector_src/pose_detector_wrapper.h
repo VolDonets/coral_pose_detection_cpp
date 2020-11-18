@@ -20,6 +20,7 @@
 #include "kernels/register.h"
 
 #include "../posenet/posenet_decoder_op.h"
+#include "../pose_angle_detection_src/pose_angle_engine.h"
 
 /** @brief This constant contains a code of successful operation. */
 const int CODE_STATUS_OK = 0;
@@ -51,6 +52,9 @@ struct DetectedPose {
  *         It from input image gets a key points. This key points can be used as you wish*/
 class PoseDetectorWrapper {
 private:
+    /** @brief This is an object of PoseAngleEngine class, which used for calculating a human body direction angle. */
+    std::shared_ptr<PoseAngleEngine> _poseAngleEngine;
+
     /** @brief This is a queue of frames which are waiting for processing
      *         (means finding a key points of the human pose)*/
     std::list<cv::Mat> _queueFrames;
