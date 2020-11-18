@@ -18,9 +18,9 @@
 #define STR_WIDTH       "640"
 #define STR_HEIGHT      "480"
 #define STR_FRAMERATE   "15/1"
-#define STR_IP          "192.168.3.255"
+#define STR_IP          "192.168.1.12"
 #define STR_PORT        "5000"
-
+#define STR_AUTO_MULTICAST "FALSE"
 const int WIDTH = 640;
 const int HEIGHT = 480;
 

@@ -56,7 +56,7 @@ void create_and_run_pipeline() {
                              "! video/x-h264,profile=constrained-baseline ! queue max-size-time=0 "
                              "! h264parse "
                              "! rtph264pay config-interval=10 pt=96 "
-                             "! udpsink host=" STR_IP " auto-multicast=true port=" STR_PORT "", &error);
+                             "! udpsink host=" STR_IP " auto-multicast=" STR_AUTO_MULTICAST " port=" STR_PORT "", &error);
 
 
     if (error != NULL) {
