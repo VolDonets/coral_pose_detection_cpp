@@ -222,7 +222,11 @@ void PoseDetectorWrapper::draw_last_pose_on_image(cv::Mat &frame) {
                     k_x[i] = -1;
                 }
             }
-            float angle = _poseAngleEngine->get_angle(k_x, k_y);
+            float angle = 0.0;
+//            _poseAngleEngine->get_angle(angle, k_x, k_y);
+            _poseAngleEngine->get_angle_no_dist(angle, k_x, k_y);
+            angle = (180 * angle) / 3.14;
+
             std::string strLine = "Pose angle: " + std::to_string(angle);
             cv::putText(frame, strLine, cv::Point(10, 20), cv::FONT_HERSHEY_COMPLEX_SMALL, 1.0,
                         cv::Scalar(46, 193, 24), 1, cv::LINE_AA);

@@ -18,16 +18,21 @@ private:
     int _heightImage;
     float _eyesDistanceOnImage;
     float _shoulderDistanceOnImage;
+    float _leftBodyDistanceOnImage;
+    float _rightBodyDistanceOnImage;
+    float _currentBodyRatio;
     float _lastDetectedAngle;
 
     int _countInitSteps;
 
     void init_angle_detector(const std::vector<int> &xCoords, const std::vector<int> &yCoords);
+    void init_angle_detector_no_dist(const std::vector<int> &xCoords, const std::vector<int> &yCoords);
 public:
     PoseAngleEngine(bool isModelHasFaceBasePoints, int widthImage, int heightImage);
     ~PoseAngleEngine();
 
-    float get_angle(const std::vector<int> &xCoords, const std::vector<int> &yCoords);
+    bool get_angle(float &angle, const std::vector<int> &xCoords, const std::vector<int> &yCoords);
+    bool get_angle_no_dist(float &angle, const std::vector<int> &xCoords, const std::vector<int> &yCoords);
     float get_eyes_distance();
     float get_shoulder_distance();
 };
